@@ -64,7 +64,7 @@ reload.vim_reload_dirs = {
 }
 
 reload.lua_reload_dirs = {
-    vim.fn.stdpath('config')
+    vim.fn.stdpath('config'),
     -- Note: the line below may cause issues reloading your config
     plugin_dirs
 }
