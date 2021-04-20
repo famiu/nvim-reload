@@ -27,11 +27,40 @@ Just install the plugin and it'll define two commands for you, `:Reload` and `:R
 
 You can also use the following Lua functions `require('nvim-reload').Reload()` and `require('nvim-reload').Restart()` instead of the `:Reload` and `:Restart` commands.
 
-## Configuration
-By default, nvim-reload only unloads the Lua modules inside your Neovim config directory so they can be reloaded by your init file through `require()` instead of getting the cached version of the module. If you want, you can also make it unload some external modules through the `modules_reload_external` table. For example:
+### Configuration
+By default, nvim-reload reloads your start plugins (located in `stdpath('data')/site/pack/*/start/*`) and init file. It also unloads the Lua modules inside your Neovim config (located in `stdpath('config')/lua`) so they can be reloaded by your init file through `require()` instead of getting the cached version of the module. If you want, you can change the default behavior through the following configuration options.
+
+* `vim_reload_dirs` - Table containing list of directories to load the Vim files from. The plugin will look into the `'compiler'`, `'doc'`, `'keymap'`, `'syntax'` and `'plugin'` subdirectories of each directory provided here for files to reload.<br>Default: `{ vim.fn.stdpath('config'), vim.fn.stdpath('data') .. '/site/pack/*/start/*' }`
+
+* `lua_reload_dirs` - Table containing list of directories to load the Lua modules from. The plugin will look into the `lua` subdirectory of each directory provided here for modules to unload.<br>Default: `{ vim.fn.stdpath('config') }`
+
+* `files_reload_external` - Paths to external VimL files outside the reload directories to reload.<br>Default: `{}`
+
+* `modules_reload_external` - Names of external modules outside the reload directories to reload.<br>Default: `{}`
+
+#### Example config:
 ```lua
-require('nvim-reload').modules_reload_external = { 'packer' }
+local reload = require('nvim-reload')
+
+reload.vim_reload_dirs = {
+    vim.fn.stdpath('config'),
+    vim.fn.stdpath('data') .. '/site/pack/*/start/*'
+}
+
+reload.lua_reload_dirs = {
+    vim.fn.stdpath('config')
+    -- Note: the line below may cause issues reloading your config
+    vim.fn.stdpath('data') .. 'site/pack/*/start/*'
+}
+
+reload.files_reload_external = {
+    vim.fn.stdpath('config') .. '/myfile.vim'
+}
+
+reload.modules_reload_external = { 'packer' }
 ```
+
+**NOTE:** The directories provided in `lua_reload_dirs` and `vim_reload_dirs` can be globs, which will automatically be expanded by the plugin.
 
 ## Note
 This plugin is still quite new and might have some bugs. And in case it does, feel free to make an issue here to report them.
