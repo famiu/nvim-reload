@@ -167,7 +167,11 @@ function M.Reload()
     unload_lua_modules()
 
     -- Source init file
-    cmd('luafile $MYVIMRC')
+    if string.match(fn.expand('$MYVIMRC'), '%.lua$') then
+        cmd('luafile $MYVIMRC')
+    else
+        cmd('source $MYVIMRC')
+    end
 
     -- Reload start plugins
     reload_runtime_files()
