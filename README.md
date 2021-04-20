@@ -42,15 +42,22 @@ By default, nvim-reload reloads your start plugins (located in `stdpath('data')/
 ```lua
 local reload = require('nvim-reload')
 
+-- If you use Neovim's built-in plugin system
+-- Or a plugin manager that uses it (eg: packer.nvim)
+local plugin_dirs = vim.fn.stdpath('data') .. '/site/pack/*/start/*'
+
+-- If you use vim-plug
+-- local plugin_dirs = vim.fn.stdpath('data') .. '/plugged/*'
+
 reload.vim_reload_dirs = {
     vim.fn.stdpath('config'),
-    vim.fn.stdpath('data') .. '/site/pack/*/start/*'
+    plugin_dirs
 }
 
 reload.lua_reload_dirs = {
     vim.fn.stdpath('config')
     -- Note: the line below may cause issues reloading your config
-    vim.fn.stdpath('data') .. 'site/pack/*/start/*'
+    plugin_dirs
 }
 
 reload.files_reload_external = {

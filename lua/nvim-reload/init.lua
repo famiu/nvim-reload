@@ -156,7 +156,7 @@ end
 -- Reload Vim configuration
 function M.Reload()
     -- Clear highlights
-    cmd('hi clear')
+    cmd('highlight clear')
 
     -- Stop LSP if it's configured
     if fn.exists(':LspStop') ~= 0 then
