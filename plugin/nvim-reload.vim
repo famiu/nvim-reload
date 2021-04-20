@@ -10,13 +10,8 @@ endif
 let s:save_cpo = &cpo
 set cpo&vim
 
-if !exists(':Reload')
-    command Reload lua require('nvim-reload').Reload()
-endif
-
-if !exists(':Restart')
-    command Restart lua require('nvim-reload').Restart()
-endif
+command! Reload lua require('nvim-reload').Reload()
+command! Restart lua require('nvim-reload').Restart()
 
 let g:loaded_nvim_reload = 1
 
