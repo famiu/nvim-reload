@@ -10,7 +10,7 @@ local scan_dir = require('plenary.scandir').scan_dir
 M.lua_reload_dirs = { fn.stdpath('config') }
 
 -- Paths to reload Vim files from
-M.vim_reload_dirs = { fn.stdpath('data') .. '/site/pack/*/start/*' }
+M.vim_reload_dirs = { fn.stdpath('config'), fn.stdpath('data') .. '/site/pack/*/start/*'}
 
 -- External files outside the runtimepaths to source
 M.files_reload_external = {}
