@@ -1,16 +1,63 @@
 local M = {}
 
+local o = vim.o
+
 local fn = vim.fn
 local cmd = vim.cmd
+local exec = vim.api.nvim_exec
 
-local Path = require('plenary.path')
 local scan_dir = require('plenary.scandir').scan_dir
 
--- Paths to unload Lua modules from
-M.lua_reload_dirs = { fn.stdpath('config') }
+local utils = require('nvim-reload.utils')
+
+-- Get all directories to reload by default
+function M.default_reload_dirs()
+    local reload_dirs = {}
+
+    -- Add all start plugins found in a directory
+    local function add_dir_plugins(dir)
+        for _, plugin in ipairs(fn.glob(dir .. '/pack/*/start/*', 0, 1)) do
+            reload_dirs[#reload_dirs+1] = plugin
+        end
+    end
+
+    reload_dirs[#reload_dirs+1] = fn.stdpath('config')
+
+    for _, dir in ipairs(fn.stdpath('config_dirs')) do
+        reload_dirs[#reload_dirs+1] = dir
+    end
+
+    reload_dirs[#reload_dirs+1] = fn.stdpath('data') .. '/site'
+    add_dir_plugins(fn.stdpath('data') .. '/site')
+
+    for _, dir in ipairs(fn.stdpath('data_dirs')) do
+        reload_dirs[#reload_dirs+1] = dir .. '/site'
+        add_dir_plugins(dir .. '/site')
+    end
+
+    for _, dir in ipairs(fn.stdpath('data_dirs')) do
+        reload_dirs[#reload_dirs+1] = dir .. '/site/after'
+        add_dir_plugins(dir .. '/site/after')
+    end
+
+    reload_dirs[#reload_dirs+1] = fn.stdpath('data') .. '/site/after'
+    add_dir_plugins(fn.stdpath('data') .. '/site/after')
+
+    for _, dir in ipairs(fn.stdpath('config_dirs')) do
+        reload_dirs[#reload_dirs+1] = dir .. '/after'
+    end
+
+    reload_dirs[#reload_dirs+1] = fn.stdpath('config') .. '/after'
+
+    return reload_dirs
+end
 
 -- Paths to reload Vim files from
-M.vim_reload_dirs = { fn.stdpath('config'), fn.stdpath('data') .. '/site/pack/*/start/*'}
+M.vim_reload_dirs = M.default_reload_dirs()
+
+-- Paths to unload Lua modules from
+-- M.lua_reload_dirs = { fn.stdpath('config') }
+M.lua_reload_dirs = M.default_reload_dirs()
 
 -- External files outside the runtimepaths to source
 M.files_reload_external = {}
@@ -18,56 +65,29 @@ M.files_reload_external = {}
 -- External Lua modules outside the runtimepaths to unload
 M.modules_reload_external = {}
 
+-- Modules to exclude from unloading due to incompatibility issues
+M.modules_reload_excluded = { 'gitsigns' }
+
 local viml_subdirs = {
     'compiler',
     'doc',
+    'indent',
     'keymap',
+    'lang',
+    'plugin',
+    'print',
+    'spell',
     'syntax',
-    'plugin'
 }
 
--- Escape lua string
-local function escape_str(str)
-    local patterns_to_escape = {
-        '%^',
-        '%$',
-        '%(',
-        '%)',
-        '%%',
-        '%.',
-        '%[',
-        '%]',
-        '%*',
-        '%+',
-        '%-',
-        '%?'
-    }
-
-    return string.gsub(
-        str,
-        string.format("([%s])", table.concat(patterns_to_escape)),
-        '%%%1'
-    )
-end
-
--- Check if path exists
-local function path_exists(path)
-    return Path:new(path):exists()
-end
-
 local function get_runtime_files_in_path(runtimepath)
-    -- Ignore opt plugins
-    if string.match(runtimepath, "/site/pack/.-/opt") then
-        return {}
-    end
-
     local runtime_files = {}
 
     -- Search each subdirectory listed listed in viml_subdirs of runtimepath for files
     for _, subdir in ipairs(viml_subdirs) do
         local viml_path = string.format("%s/%s", runtimepath, subdir)
 
-        if path_exists(viml_path) then
+        if utils.path_exists(viml_path) then
             local files = scan_dir(viml_path, { search_pattern = '%.n?vim$', hidden = true })
 
             for _, file in ipairs(files) do
@@ -79,10 +99,18 @@ local function get_runtime_files_in_path(runtimepath)
     return runtime_files
 end
 
+local function is_module_excluded(module)
+    for _, v in ipairs(M.modules_reload_excluded) do
+        if v == module or string.match(module, string.format('^%s%%.', v)) then
+            return true
+        end
+    end
+end
+
 local function get_lua_modules_in_path(runtimepath)
     local luapath = string.format("%s/lua", runtimepath)
 
-    if not path_exists(luapath) then
+    if not utils.path_exists(luapath) then
         return {}
     end
 
@@ -95,7 +123,7 @@ local function get_lua_modules_in_path(runtimepath)
             module,
             string.format(
                 '%s/(.*)%%.lua',
-                escape_str(luapath)
+                utils.escape_str(luapath)
             )
         )
 
@@ -143,7 +171,9 @@ local function unload_lua_modules()
             local modules = get_lua_modules_in_path(path)
 
             for _, module in ipairs(modules) do
-                package.loaded[module] = nil
+                if not is_module_excluded(module) then
+                    package.loaded[module] = nil
+                end
             end
         end
     end
@@ -153,28 +183,76 @@ local function unload_lua_modules()
     end
 end
 
+-- Reset all Neovim configuration
+local function reset_all()
+    -- Clear autocmds
+    cmd('autocmd!')
+    local augroups = utils.split(exec("augroup", true), " ")
+
+    for _, augroup in ipairs(augroups) do
+        cmd('autocmd! ' .. augroup)
+    end
+
+    exec([[
+    "" Stop LSP clients
+    if exists(':LspStop')
+        LspStop
+    endif
+
+    "" Clear highlights
+    highlight clear
+
+    "" Clear mappings
+    mapclear
+    mapclear <buffer>
+    mapclear!
+    mapclear! <buffer>
+
+    "" Clear commands
+    comclear
+
+    "" Clear all global variables
+    let gscope = g:
+
+    for var in keys(gscope)
+        unlet g:{var}
+    endfor
+
+    "" Unset all values
+    set all&
+    ]], false)
+
+    -- Unload already loaded modules
+    unload_lua_modules()
+end
+
 -- Reload Vim configuration
 function M.Reload()
-    -- Clear highlights
-    cmd('highlight clear')
+    -- Save path to init file
+    local init_path = fn.expand('$MYVIMRC')
 
-    -- Stop LSP if it's configured
-    if fn.exists(':LspStop') ~= 0 then
-        cmd('LspStop')
-    end
+    -- Save runtimepath
+    local runtimepath = o.runtimepath
 
-    -- Unload all already loaded modules
-    unload_lua_modules()
+    -- Reset everything
+    reset_all()
 
     -- Source init file
-    if string.match(fn.expand('$MYVIMRC'), '%.lua$') then
-        cmd('luafile $MYVIMRC')
+    if string.match(init_path, '%.lua$') then
+        cmd('luafile ' .. init_path)
     else
-        cmd('source $MYVIMRC')
+        cmd('source ' .. init_path)
     end
+
+    -- Set runtimepath
+    o.runtimepath = runtimepath
 
     -- Reload start plugins
     reload_runtime_files()
+
+    -- Reload all buffers
+    -- TODO: Add prompt
+    cmd('bufdo edit!')
 end
 
 -- Restart Vim without having to close and run again
