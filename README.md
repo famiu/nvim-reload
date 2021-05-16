@@ -47,6 +47,12 @@ If you want, you can change the default behavior through the following configura
 
 * `modules_reload_external` - Table containing Names of external modules (modules not inside any of the `lua_reload_dirs`) to reload.<br>Default: `{}`
 
+* `pre_reload_hook` - Function to run before reloading the config.
+<br>Default: `nil`
+
+* `post_reload_hook` - Function to run after reloading the config.
+<br>Default: `nil`
+
 #### Example config:
 ```lua
 local reload = require('nvim-reload')
@@ -74,6 +80,10 @@ reload.files_reload_external = {
 }
 
 reload.modules_reload_external = { 'packer' }
+
+local post_reload = function()
+    require('feline').reset_highlights()
+end
 ```
 
 **NOTE:** The directories provided in `lua_reload_dirs` and `vim_reload_dirs` can be globs, which will automatically be expanded by the plugin.

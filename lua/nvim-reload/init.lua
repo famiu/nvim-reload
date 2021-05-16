@@ -18,6 +18,10 @@ M.files_reload_external = {}
 -- External Lua modules outside the runtimepaths to unload
 M.modules_reload_external = {}
 
+-- Pre-reload hook
+M.pre_reload_hook = nil
+M.post_reload_hook = nil
+
 local viml_subdirs = {
     'compiler',
     'doc',
@@ -155,6 +159,11 @@ end
 
 -- Reload Vim configuration
 function M.Reload()
+    -- Run pre-reload hook
+    if type(M.pre_reload_hook) == "function" then
+        M.pre_reload_hook()
+    end
+
     -- Clear highlights
     cmd('highlight clear')
 
@@ -175,6 +184,11 @@ function M.Reload()
 
     -- Reload start plugins
     reload_runtime_files()
+
+    -- Run post-reload hook
+    if type(M.post_reload_hook) == "function" then
+        M.post_reload_hook()
+    end
 end
 
 -- Restart Vim without having to close and run again
