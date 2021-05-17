@@ -81,7 +81,7 @@ reload.files_reload_external = {
 
 reload.modules_reload_external = { 'packer' }
 
-local post_reload = function()
+reload.post_reload = function()
     require('feline').reset_highlights()
 end
 ```
