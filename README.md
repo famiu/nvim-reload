@@ -93,4 +93,5 @@ This plugin is still quite new and might have some bugs. And in case it does, fe
 
 ## Self-plug
 If you liked this plugin, also check out:
-* [feline.nvim](https://github.com/famiu/feline.nvim) - A nice customizable statusline for Neovim written in Lua.
+- [feline.nvim](https://github.com/famiu/feline.nvim) - A nice customizable statusline for Neovim written in Lua.
+- [bufdelete.nvim](https://github.com/famiu/bufdelete.nvim) - Delete Neovim buffers without losing your window layout.
