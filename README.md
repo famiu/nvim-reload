@@ -2,7 +2,7 @@
 ## About
 Nvim-reload is a Neovim plugin that allows you to reload your entire Neovim config completely, including your start plugins. It also reloads all lua modules inside your Neovim config directory.
 
-NOTE: If you use Windows and are facing an issue, please make sure the issue also exists on Linux or MacOS. I don't plan to fix Windows-specific issues or go out of my way to support Windows.
+**THIS PROJECT IS NO LONGER BEING MAINTAINED. YOU MIGHT STILL BE ABLE TO USE IT BUT DO NOT EXPECT ANY ISSUES YOU HAVE WITH IT TO BE FIXED. THOSE WILLING TO MAINTAIN IT CAN FEEL FREE TO CREATE A FORK**
 
 ### Requires:
 * Neovim >= 0.5
